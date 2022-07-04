@@ -11,7 +11,9 @@ library(lubridate)
 
 
 
-y<-read.csv("https://raw.githubusercontent.com/ibaitamayo/infectious/main/COVID_19/Covid_data/ccaa_covid19_test_realizados.csv",encoding = "UTF-8")
+# y<-read.csv("https://raw.githubusercontent.com/ibaitamayo/infectious/main/COVID_19/Covid_data/ccaa_covid19_test_realizados.csv",encoding = "UTF-8")
+y<-read.csv("https://raw.githubusercontent.com/ibaitamayo/infectious/main/COVID_19/Covid_data/ccaa_vacunas.csv",encoding = "UTF-8")
+y<-y[,-c(1,4:9,11:12)]
 colnames(y)[grep(pattern="fecha",x=tolower(colnames(y)))]<-"fecha"
 codcom<-y%>%distinct(CCAA,cod_ine)
 
@@ -104,7 +106,7 @@ movingAverage <- function(x, n=1, centered=FALSE) {
 codcom<-x%>%distinct(CCAA,cod_ine)
 y<-left_join(codcom,y%>%dplyr::select(-CCAA),by="cod_ine")
 
-y%>%group_by(CCAA)%>%arrange(fecha)%>%mutate(PCR_porcent=as.numeric(gsub(pattern=",",replacement = ".",x = PCR_x_1000hab.))/10,TEST_AC=as.numeric(gsub(pattern=",",replacement = ".",x = TEST_ACC_x_1000hab.))/10,num_dias=(1:n()*7))->y
+y%>%group_by(CCAA)%>%arrange(fecha)%>%mutate(porcent_dosis_por_100_habit=as.numeric(gsub(pattern=",",replacement = ".",x = Porcentaje.de.dosis.administradas.por.100.habitantes)),POrcent_pauta_completa=as.numeric(gsub(pattern=",",replacement = ".",x = Porcentaje.con.pauta.completa)),fecha2=dmy(fecha))->y
 Codigo<-c("ES.AN","ES.AR","ES.AS","ES.IB","ES.CN","ES.CB","ES.CM","ES.CL","ES.CT","ES.CE","ES.VC","ES.EX","ES.GA","ES.MD","ES.ML","ES.MC","ES.NC","ES.PV","ES.RI")
 cod_ine<-c(1,2,3,4,5,6,8,7,9,18,10,11,12,13,19,14,15,16,17)
 Codigo1<-cbind(data.frame(cod_ine),data.frame(Codigo))
@@ -128,7 +130,7 @@ ui <- fluidPage(verticalLayout(
     # place the contents inside a box
     shinydashboard::box(
         width = 12
-        , title = "Click en el mapa!"
+        , title = "Selecciona la Comunidad Autónoma"
         # separate the box by a column
         , column(
             width = 4
@@ -139,11 +141,9 @@ ui <- fluidPage(verticalLayout(
             )
         )
         # separate the box by a column
-        , column(
-            width = 10
-            , leaflet::leafletOutput( outputId = "myMap"
-                                      , height = 400
-            )
+        , leaflet::leafletOutput( outputId = "myMap"
+                                      
+            
         )
     ), # end of the box
     plotOutput("distPlot")
@@ -228,9 +228,9 @@ server <- function( input, output, session ){
       if (length(click.list$ids)>0){
 
         filtered<-x%>%filter(CCAA==click.list$ids)%>%filter(diarios>=0)
-        pt2<-ggplot(data=filtered,aes(x=fecha2,y=diarios))+geom_point()+ggtitle(paste("Casos totales",click.list$ids,sep=" "))+geom_line(aes(y=movingAverage(x = diarios,n = 7,centered = TRUE),colour="red"))+geom_vline(xintercept = ymd("2020-03-15"))+theme_light()
+        pt2<-ggplot(data=filtered,aes(x=fecha2,y=diarios))+geom_point()+ggtitle(paste("Casos diarios en",click.list$ids,sep=" "))+geom_line(aes(y=movingAverage(x = diarios,n = 7,centered = TRUE),colour="red"))+ylab("Casos diarios")+xlab("fecha")+geom_vline(xintercept = ymd("2020-03-15"))+theme_light()+theme(legend.position="none")
         filtered2<-y%>%filter(CCAA==click.list$ids)
-        pt1<-ggplot(data=filtered2%>%mutate(fecha2=ymd("2020-03-15")+days(num_dias)),aes(x=fecha2))+geom_line(aes(y=PCR_porcent,color="PCR"))+geom_line(aes(y=TEST_AC,color="Anticuerpos"))+ggtitle(paste("Tests por cada 100 habitantes en",click.list$ids,sep=" "))+theme_light()
+        pt1<-ggplot(data=filtered2,aes(x=fecha2))+geom_line(aes(y=POrcent_pauta_completa), colour = "blue")+ggtitle(paste("Porcentaje de vacunas en",click.list$ids,sep=" "))+ylab("pauta completa (%)")+xlab("fecha")+ylim(0,100)+theme(legend.position="none")+theme_light()#+geom_line(aes(y=porcent_dosis_por_100_habit,color="Porcentaje de dosis por cada 100 hab"))
         grid.arrange(pt1,pt2)
       }
       

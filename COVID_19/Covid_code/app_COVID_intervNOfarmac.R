@@ -14,6 +14,7 @@ library(gridExtra)
 library(tidyverse)
 library(deSolve)
 library(lubridate)
+library(stats)
 
 
 ## Configuration
@@ -116,7 +117,7 @@ solve_ode <- function(sdp, red, typ, beta, max_time) {
     
     daily <- ode_solution %>%
         filter(t %in% seq(0, max_time, by = 1)) %>%
-        mutate(C = if_else(row_number() == 1, 0, lag(S, k = 1) - S), 
+        mutate(C = if_else(row_number() == 1, 0, lag(S) - S), 
                c = C / N)
     
     daily
@@ -143,7 +144,7 @@ solve_ode2 <- function(sdp, red, typ, beta, diashastaconfi) {
     
     daily <- ode_solution %>%
         filter(t %in% seq(0, diashastaconfi, by = 1)) %>%
-        mutate(C = if_else(row_number() == 1, 0, lag(S, k = 1) - S), 
+        mutate(C = if_else(row_number() == 1, 0, lag(S) - S), 
                c = C / N)
     
 }
